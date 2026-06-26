@@ -102,35 +102,23 @@ public class StatsManager {
         PlayerStatsData data = new PlayerStatsData();
         
         try {
-            // Parse the stats JSON
             com.google.gson.JsonObject stats = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
             
-            // Minecraft 1.20+ uses "minecraft:custom" for custom stats
-            if (stats.has("minecraft:custom")) {
-                com.google.gson.JsonObject custom = stats.getAsJsonObject("minecraft:custom");
-                
-                data.mobsKilled = getIntStat(custom, "minecraft:mob_kills", 0);
-                data.playersKilled = getIntStat(custom, "minecraft.player_kills", 0);
-                // Minecraft doesn't track player kills separately in the same way
-                // We'll need to track this ourselves or look at PvP stats
-                
-                // Try older format
-                if (data.mobsKilled == 0) {
-                    data.mobsKilled = getIntStat(custom, "minecraft:mob_kills", 0);
-                }
-            }
-            
-            // Parse killed stats
+            // Mobs kills via "minecraft:killed"
             if (stats.has("minecraft:killed")) {
                 com.google.gson.JsonObject killed = stats.getAsJsonObject("minecraft:killed");
                 for (String key : killed.keySet()) {
-                    if (key.startsWith("minecraft:")) {
+                    // All mobs (not player)
+                    if (!key.equals("minecraft:player")) {
                         data.mobsKilled += killed.get(key).getAsInt();
+                    } else {
+                        // Player kills = you killed other players
+                        data.playersKilled += killed.get(key).getAsInt();
                     }
                 }
             }
             
-            // Parse killed_by stats (deaths)
+            // Deaths via "minecraft:killed_by"
             if (stats.has("minecraft:killed_by")) {
                 com.google.gson.JsonObject killedBy = stats.getAsJsonObject("minecraft:killed_by");
                 for (String key : killedBy.keySet()) {
@@ -140,7 +128,7 @@ public class StatsManager {
                 }
             }
             
-            // Parse minecraft:mined for blocks broken
+            // Blocks mined
             if (stats.has("minecraft:mined")) {
                 com.google.gson.JsonObject mined = stats.getAsJsonObject("minecraft:mined");
                 for (String key : mined.keySet()) {
@@ -148,15 +136,15 @@ public class StatsManager {
                 }
             }
             
-            // Parse minecraft:placed for blocks placed
-            if (stats.has("minecraft:placed")) {
-                com.google.gson.JsonObject placed = stats.getAsJsonObject("minecraft:placed");
-                for (String key : placed.keySet()) {
-                    data.blocksPlaced += placed.get(key).getAsInt();
+            // Blocks placed
+            if (stats.has("minecraft:used")) {
+                com.google.gson.JsonObject used = stats.getAsJsonObject("minecraft:used");
+                for (String key : used.keySet()) {
+                    data.blocksPlaced += used.get(key).getAsInt();
                 }
             }
             
-            // Parse minecraft:crafted for items crafted
+            // Items crafted
             if (stats.has("minecraft:crafted")) {
                 com.google.gson.JsonObject crafted = stats.getAsJsonObject("minecraft:crafted");
                 for (String key : crafted.keySet()) {
@@ -164,11 +152,94 @@ public class StatsManager {
                 }
             }
             
+            // Custom stats (Minecraft 1.17+)
+            if (stats.has("minecraft:custom")) {
+                com.google.gson.JsonObject custom = stats.getAsJsonObject("minecraft:custom");
+                
+                // Fish caught
+                data.fishCaught = getIntStat(custom, "minecraft:fish_caught", 0);
+                
+                // Raids won
+                data.raidsWon = getIntStat(custom, "minecraft:raid_win", 0);
+                if (data.raidsWon == 0) {
+                    data.raidsWon = getIntStat(custom, "minecraft:raid_victories", 0);
+                }
+                
+                // Ender chests opened
+                data.enderChestsOpened = getIntStat(custom, "minecraft:open_enderchest", 0);
+                
+                // Trades used
+                data.tradesUsed = getIntStat(custom, "minecraft:traded_with_villager", 0);
+                if (data.tradesUsed == 0) {
+                    data.tradesUsed = getIntStat(custom, "minecraft:villager_trades", 0);
+                }
+                
+                // Distance walked
+                data.distanceWalked = getDoubleStat(custom, "minecraft:walk_one_cm", 0) + 
+                                      getDoubleStat(custom, "minecraft:sprint_one_cm", 0) +
+                                      getDoubleStat(custom, "minecraft:crouch_one_cm", 0);
+                
+                // Time played
+                data.timePlayed = getLongStat(custom, "minecraft:play_one_minute", 0);
+                
+                // Food eaten
+                data.foodEaten = getIntStat(custom, "minecraft:eat_better_slice", 0);
+                if (data.foodEaten == 0) {
+                    data.foodEaten = getIntStat(custom, "minecraft:consume_item", 0);
+                }
+                
+                // Damage dealt
+                data.damageDealt = getDoubleStat(custom, "minecraft:damage_dealt", 0);
+                data.damageTaken = getDoubleStat(custom, "minecraft:damage_taken", 0);
+            }
+            
+            // Animals bred
+            if (stats.has("minecraft:bred")) {
+                com.google.gson.JsonObject bred = stats.getAsJsonObject("minecraft:bred");
+                for (String key : bred.keySet()) {
+                    data.animalsBred += bred.get(key).getAsInt();
+                }
+            }
+            
+            // Advancements count
+            if (stats.has("minecraft:custom")) {
+                com.google.gson.JsonObject custom = stats.getAsJsonObject("minecraft:custom");
+                int advancementsCount = 0;
+                for (String key : custom.keySet()) {
+                    if (key.startsWith("minecraft:adventure")) {
+                        advancementsCount++;
+                    }
+                }
+                data.advancements = advancementsCount;
+            }
+            
         } catch (Exception e) {
-            plugin.getLogger().warning("Erreur lors du parsing des stats Minecraft: " + e.getMessage());
+            plugin.getLogger().warning("Erreur parsing stats Minecraft: " + e.getMessage());
         }
         
         return data;
+    }
+    
+    private double getDoubleStat(com.google.gson.JsonObject obj, String key, double defaultValue) {
+        try {
+            if (obj.has(key)) {
+                return obj.get(key).getAsDouble();
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        return defaultValue;
+    }
+    
+    private long getLongStat(com.google.gson.JsonObject obj, String key, long defaultValue) {
+        try {
+            if (obj.has(key)) {
+                return obj.get(key).getAsLong();
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        return defaultValue;
     }
     
     private int getIntStat(com.google.gson.JsonObject obj, String key, int defaultValue) {
@@ -210,10 +281,19 @@ public class StatsManager {
                                     
                                     PlayerStatsData currentData = getPlayerStats(uuid);
                                     currentData.mobsKilled = minecraftData.mobsKilled;
+                                    currentData.playersKilled = minecraftData.playersKilled;
                                     currentData.deaths = minecraftData.deaths;
                                     currentData.blocksBroken = minecraftData.blocksBroken;
                                     currentData.blocksPlaced = minecraftData.blocksPlaced;
                                     currentData.itemsCrafted = minecraftData.itemsCrafted;
+                                    currentData.fishCaught = minecraftData.fishCaught;
+                                    currentData.animalsBred = minecraftData.animalsBred;
+                                    currentData.raidsWon = minecraftData.raidsWon;
+                                    currentData.advancements = minecraftData.advancements;
+                                    currentData.enderChestsOpened = minecraftData.enderChestsOpened;
+                                    currentData.tradesUsed = minecraftData.tradesUsed;
+                                    currentData.distanceWalked = minecraftData.distanceWalked;
+                                    currentData.timePlayed = minecraftData.timePlayed;
                                     
                                     importedFromMinecraft.put(uuid, true);
                                     importedCount++;
@@ -246,10 +326,19 @@ public class StatsManager {
                                 
                                 PlayerStatsData currentData = getPlayerStats(uuid);
                                 currentData.mobsKilled = minecraftData.mobsKilled;
+                                currentData.playersKilled = minecraftData.playersKilled;
                                 currentData.deaths = minecraftData.deaths;
                                 currentData.blocksBroken = minecraftData.blocksBroken;
                                 currentData.blocksPlaced = minecraftData.blocksPlaced;
                                 currentData.itemsCrafted = minecraftData.itemsCrafted;
+                                currentData.fishCaught = minecraftData.fishCaught;
+                                currentData.animalsBred = minecraftData.animalsBred;
+                                currentData.raidsWon = minecraftData.raidsWon;
+                                currentData.advancements = minecraftData.advancements;
+                                currentData.enderChestsOpened = minecraftData.enderChestsOpened;
+                                currentData.tradesUsed = minecraftData.tradesUsed;
+                                currentData.distanceWalked = minecraftData.distanceWalked;
+                                currentData.timePlayed = minecraftData.timePlayed;
                                 
                                 importedFromMinecraft.put(uuid, true);
                                 importedCount++;
@@ -294,12 +383,18 @@ public class StatsManager {
                 data.blocksBroken = config.getInt(uuidStr + ".blocksBroken", 0);
                 data.blocksPlaced = config.getInt(uuidStr + ".blocksPlaced", 0);
                 data.itemsCrafted = config.getInt(uuidStr + ".itemsCrafted", 0);
+                data.fishCaught = config.getInt(uuidStr + ".fishCaught", 0);
+                data.animalsBred = config.getInt(uuidStr + ".animalsBred", 0);
+                data.raidsWon = config.getInt(uuidStr + ".raidsWon", 0);
+                data.advancements = config.getInt(uuidStr + ".advancements", 0);
+                data.enderChestsOpened = config.getInt(uuidStr + ".enderChestsOpened", 0);
+                data.tradesUsed = config.getInt(uuidStr + ".tradesUsed", 0);
+                data.smoothStoneSmelted = config.getInt(uuidStr + ".smoothStoneSmelted", 0);
                 data.distanceWalked = config.getDouble(uuidStr + ".distanceWalked", 0);
                 data.timePlayed = config.getLong(uuidStr + ".timePlayed", 0);
                 data.damageDealt = config.getDouble(uuidStr + ".damageDealt", 0);
                 data.damageTaken = config.getDouble(uuidStr + ".damageTaken", 0);
                 data.foodEaten = config.getInt(uuidStr + ".foodEaten", 0);
-                data.animalsBred = config.getInt(uuidStr + ".animalsBred", 0);
                 playerStats.put(uuid, data);
                 
                 // Load cached player name
@@ -325,12 +420,18 @@ public class StatsManager {
             config.set(uuidStr + ".blocksBroken", data.blocksBroken);
             config.set(uuidStr + ".blocksPlaced", data.blocksPlaced);
             config.set(uuidStr + ".itemsCrafted", data.itemsCrafted);
+            config.set(uuidStr + ".fishCaught", data.fishCaught);
+            config.set(uuidStr + ".animalsBred", data.animalsBred);
+            config.set(uuidStr + ".raidsWon", data.raidsWon);
+            config.set(uuidStr + ".advancements", data.advancements);
+            config.set(uuidStr + ".enderChestsOpened", data.enderChestsOpened);
+            config.set(uuidStr + ".tradesUsed", data.tradesUsed);
+            config.set(uuidStr + ".smoothStoneSmelted", data.smoothStoneSmelted);
             config.set(uuidStr + ".distanceWalked", data.distanceWalked);
             config.set(uuidStr + ".timePlayed", data.timePlayed);
             config.set(uuidStr + ".damageDealt", data.damageDealt);
             config.set(uuidStr + ".damageTaken", data.damageTaken);
             config.set(uuidStr + ".foodEaten", data.foodEaten);
-            config.set(uuidStr + ".animalsBred", data.animalsBred);
             
             // Save player name
             String name = playerNames.get(entry.getKey());
@@ -426,17 +527,17 @@ public class StatsManager {
     public List<UUID> getTopProgress(int limit) {
         return playerStats.entrySet().stream()
                 .sorted((e1, e2) -> {
-                    PlayerStatsData d1 = e1.getValue();
-                    PlayerStatsData d2 = e2.getValue();
-                    double score1 = d1.blocksBroken + d1.blocksPlaced + d1.itemsCrafted + 
-                                    (d1.distanceWalked / 100) + d1.animalsBred;
-                    double score2 = d2.blocksBroken + d2.blocksPlaced + d2.itemsCrafted + 
-                                    (d2.distanceWalked / 100) + d2.animalsBred;
-                    return Double.compare(score2, score1);
+                    int score1 = e1.getValue().getTotalProgress();
+                    int score2 = e2.getValue().getTotalProgress();
+                    return Integer.compare(score2, score1);
                 })
                 .limit(limit)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
+    }
+    
+    public int getPlayerProgress(UUID uuid) {
+        return getPlayerStats(uuid).getTotalProgress();
     }
 
     public String getPlayerName(UUID uuid) {
@@ -539,11 +640,23 @@ public class StatsManager {
         public int blocksBroken = 0;
         public int blocksPlaced = 0;
         public int itemsCrafted = 0;
+        public int fishCaught = 0;
+        public int animalsBred = 0;
+        public int raidsWon = 0;
+        public int advancements = 0;
+        public int enderChestsOpened = 0;
+        public int tradesUsed = 0;
+        public int smoothStoneSmelted = 0; // proxy pour progres general
         public double distanceWalked = 0;
         public long timePlayed = 0;
         public double damageDealt = 0;
         public double damageTaken = 0;
         public int foodEaten = 0;
-        public int animalsBred = 0;
+        
+        public int getTotalProgress() {
+            return blocksBroken + blocksPlaced + itemsCrafted + fishCaught + 
+                   animalsBred + raidsWon + advancements + 
+                   enderChestsOpened + tradesUsed + smoothStoneSmelted;
+        }
     }
 }

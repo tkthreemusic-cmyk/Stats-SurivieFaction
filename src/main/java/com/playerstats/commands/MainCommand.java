@@ -260,17 +260,28 @@ public class MainCommand implements CommandExecutor, TabCompleter {
 
         StatsManager.PlayerStatsData stats = plugin.getStatsManager().getPlayerStats(targetUUID);
         
+        int totalProgress = stats.getTotalProgress();
+        
         sender.sendMessage(Component.text(""));
         sender.sendMessage(Component.text(" §6§l▬▬▬ " + displayName + " ▬▬▬").color(NamedTextColor.GOLD));
         sender.sendMessage(Component.text(""));
-        sender.sendMessage(buildStatLine(" §e🗡️ Mobs tués:", stats.mobsKilled));
-        sender.sendMessage(buildStatLine(" §c⚔️ Joueurs tués:", stats.playersKilled));
-        sender.sendMessage(buildStatLine(" §4💀 Morts:", stats.deaths));
-        sender.sendMessage(Component.text(" §7§m──────────────").color(NamedTextColor.GRAY));
-        sender.sendMessage(buildStatLine(" §a⛏️ Blocs cassés:", stats.blocksBroken));
-        sender.sendMessage(buildStatLine(" §a🧱 Blocs posés:", stats.blocksPlaced));
-        sender.sendMessage(buildStatLine(" §b🔨 Objets craftés:", stats.itemsCrafted));
-        sender.sendMessage(buildStatLine(" §d🐄 Animaux élevés:", stats.animalsBred));
+        sender.sendMessage(Component.text(" §6⚔️ COMBAT").color(NamedTextColor.GOLD));
+        sender.sendMessage(buildStatLine("  §e🗡️ Mobs tués:", stats.mobsKilled));
+        sender.sendMessage(buildStatLine("  §c⚔️ Joueurs tués:", stats.playersKilled));
+        sender.sendMessage(buildStatLine("  §4💀 Morts:", stats.deaths));
+        sender.sendMessage(Component.text(""));
+        sender.sendMessage(Component.text(" §a⛏️ PROGRESS").color(NamedTextColor.GREEN));
+        sender.sendMessage(buildStatLine("  §f⛏️ Blocs cassés:", stats.blocksBroken));
+        sender.sendMessage(buildStatLine("  §f🧱 Blocs posés:", stats.blocksPlaced));
+        sender.sendMessage(buildStatLine("  §f🔨 Objets craftés:", stats.itemsCrafted));
+        sender.sendMessage(buildStatLine("  §f🎣 Poissons:", stats.fishCaught));
+        sender.sendMessage(buildStatLine("  §f🐄 Animaux élevés:", stats.animalsBred));
+        sender.sendMessage(buildStatLine("  §f🏆 Raids gagnés:", stats.raidsWon));
+        sender.sendMessage(buildStatLine("  §f🗺️ Advancements:", stats.advancements));
+        sender.sendMessage(buildStatLine("  §f💰 Échanges:", stats.tradesUsed));
+        sender.sendMessage(Component.text(""));
+        sender.sendMessage(Component.text(" §b📊 TOTAL PROGRÈS: ").color(NamedTextColor.AQUA)
+            .append(Component.text(String.valueOf(totalProgress)).color(NamedTextColor.WHITE)));
         sender.sendMessage(Component.text(" §7§m▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n").color(NamedTextColor.GRAY));
     }
 

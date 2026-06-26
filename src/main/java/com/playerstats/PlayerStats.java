@@ -24,7 +24,7 @@ public class PlayerStats extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
         getServer().getPluginManager().registerEvents(new EntityListener(this), this);
         
-        getLogger().info("PlayerStats v1.4.0 a été activé!");
+        getLogger().info("PlayerStats v1.5.0 a été activé!");
     }
 
     @Override
