@@ -100,18 +100,18 @@ public class MainCommand implements CommandExecutor, TabCompleter {
         List<UUID> topPlayers = plugin.getStatsManager().getTopProgress(10);
         
         sender.sendMessage(Component.text(""));
-        sender.sendMessage(Component.text(" §a§l▬▬▬ TOP 10 PROGRESS ▬▬▬").color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text(" §a§l▬▬▬ TOP 10 PROGRES ▬▬▬").color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text(" §7Classement des progres debloques").color(NamedTextColor.GRAY));
         sender.sendMessage(Component.text(""));
         
         if (topPlayers.isEmpty()) {
-            sender.sendMessage(Component.text(" §7Aucun joueur n'a de progression encore.").color(NamedTextColor.GRAY));
+            sender.sendMessage(Component.text(" §7Aucun joueur n'a de progres.").color(NamedTextColor.GRAY));
         } else {
             for (int i = 0; i < topPlayers.size(); i++) {
                 UUID uuid = topPlayers.get(i);
                 String playerName = plugin.getStatsManager().getPlayerName(uuid);
                 StatsManager.PlayerStatsData data = plugin.getStatsManager().getPlayerStats(uuid);
-                int progress = data.blocksBroken + data.blocksPlaced + data.itemsCrafted;
-                sender.sendMessage(buildRankingLine(i + 1, playerName, progress));
+                sender.sendMessage(buildRankingLine(i + 1, playerName, data.advancements));
             }
         }
         sender.sendMessage(Component.text(" §7§m▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n").color(NamedTextColor.GRAY));
@@ -260,8 +260,6 @@ public class MainCommand implements CommandExecutor, TabCompleter {
 
         StatsManager.PlayerStatsData stats = plugin.getStatsManager().getPlayerStats(targetUUID);
         
-        int totalProgress = stats.getTotalProgress();
-        
         sender.sendMessage(Component.text(""));
         sender.sendMessage(Component.text(" §6§l▬▬▬ " + displayName + " ▬▬▬").color(NamedTextColor.GOLD));
         sender.sendMessage(Component.text(""));
@@ -270,18 +268,16 @@ public class MainCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(buildStatLine("  §c⚔️ Joueurs tués:", stats.playersKilled));
         sender.sendMessage(buildStatLine("  §4💀 Morts:", stats.deaths));
         sender.sendMessage(Component.text(""));
-        sender.sendMessage(Component.text(" §a⛏️ PROGRESS").color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text(" §a⛏️ PROGRESSION").color(NamedTextColor.GREEN));
         sender.sendMessage(buildStatLine("  §f⛏️ Blocs cassés:", stats.blocksBroken));
         sender.sendMessage(buildStatLine("  §f🧱 Blocs posés:", stats.blocksPlaced));
         sender.sendMessage(buildStatLine("  §f🔨 Objets craftés:", stats.itemsCrafted));
         sender.sendMessage(buildStatLine("  §f🎣 Poissons:", stats.fishCaught));
         sender.sendMessage(buildStatLine("  §f🐄 Animaux élevés:", stats.animalsBred));
         sender.sendMessage(buildStatLine("  §f🏆 Raids gagnés:", stats.raidsWon));
-        sender.sendMessage(buildStatLine("  §f🗺️ Advancements:", stats.advancements));
+        sender.sendMessage(buildStatLine("  §f🗺️ Progrès:", stats.advancements));
         sender.sendMessage(buildStatLine("  §f💰 Échanges:", stats.tradesUsed));
         sender.sendMessage(Component.text(""));
-        sender.sendMessage(Component.text(" §b📊 TOTAL PROGRÈS: ").color(NamedTextColor.AQUA)
-            .append(Component.text(String.valueOf(totalProgress)).color(NamedTextColor.WHITE)));
         sender.sendMessage(Component.text(" §7§m▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n").color(NamedTextColor.GRAY));
     }
 
