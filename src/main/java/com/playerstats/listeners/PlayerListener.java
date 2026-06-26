@@ -13,6 +13,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -29,6 +30,12 @@ public class PlayerListener implements Listener {
 
     public PlayerListener(PlayerStats plugin) {
         this.plugin = plugin;
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        // Save player name when they join
+        plugin.getStatsManager().updatePlayerName(event.getPlayer().getUniqueId(), event.getPlayer().getName());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

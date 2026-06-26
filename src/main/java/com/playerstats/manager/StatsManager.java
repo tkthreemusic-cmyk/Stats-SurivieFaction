@@ -14,11 +14,13 @@ public class StatsManager {
 
     private final PlayerStats plugin;
     private final Map<UUID, PlayerStatsData> playerStats;
+    private final Map<UUID, String> playerNames;
     private final File dataFile;
 
     public StatsManager(PlayerStats plugin) {
         this.plugin = plugin;
         this.playerStats = new HashMap<>();
+        this.playerNames = new HashMap<>();
         this.dataFile = new File(plugin.getDataFolder(), "playerdata.yml");
         loadStats();
     }
@@ -53,6 +55,12 @@ public class StatsManager {
                 data.foodEaten = config.getInt(uuidStr + ".foodEaten", 0);
                 data.animalsBred = config.getInt(uuidStr + ".animalsBred", 0);
                 playerStats.put(uuid, data);
+                
+                // Load cached player name
+                String cachedName = config.getString(uuidStr + ".lastName");
+                if (cachedName != null && !cachedName.isEmpty()) {
+                    playerNames.put(uuid, cachedName);
+                }
             } catch (IllegalArgumentException e) {
                 plugin.getLogger().warning("Invalid UUID in playerdata.yml: " + uuidStr);
             }
@@ -63,20 +71,26 @@ public class StatsManager {
         FileConfiguration config = new YamlConfiguration();
         
         for (Map.Entry<UUID, PlayerStatsData> entry : playerStats.entrySet()) {
-            String path = entry.getKey().toString();
+            String uuidStr = entry.getKey().toString();
             PlayerStatsData data = entry.getValue();
-            config.set(path + ".mobsKilled", data.mobsKilled);
-            config.set(path + ".playersKilled", data.playersKilled);
-            config.set(path + ".deaths", data.deaths);
-            config.set(path + ".blocksBroken", data.blocksBroken);
-            config.set(path + ".blocksPlaced", data.blocksPlaced);
-            config.set(path + ".itemsCrafted", data.itemsCrafted);
-            config.set(path + ".distanceWalked", data.distanceWalked);
-            config.set(path + ".timePlayed", data.timePlayed);
-            config.set(path + ".damageDealt", data.damageDealt);
-            config.set(path + ".damageTaken", data.damageTaken);
-            config.set(path + ".foodEaten", data.foodEaten);
-            config.set(path + ".animalsBred", data.animalsBred);
+            config.set(uuidStr + ".mobsKilled", data.mobsKilled);
+            config.set(uuidStr + ".playersKilled", data.playersKilled);
+            config.set(uuidStr + ".deaths", data.deaths);
+            config.set(uuidStr + ".blocksBroken", data.blocksBroken);
+            config.set(uuidStr + ".blocksPlaced", data.blocksPlaced);
+            config.set(uuidStr + ".itemsCrafted", data.itemsCrafted);
+            config.set(uuidStr + ".distanceWalked", data.distanceWalked);
+            config.set(uuidStr + ".timePlayed", data.timePlayed);
+            config.set(uuidStr + ".damageDealt", data.damageDealt);
+            config.set(uuidStr + ".damageTaken", data.damageTaken);
+            config.set(uuidStr + ".foodEaten", data.foodEaten);
+            config.set(uuidStr + ".animalsBred", data.animalsBred);
+            
+            // Save player name
+            String name = playerNames.get(entry.getKey());
+            if (name != null) {
+                config.set(uuidStr + ".lastName", name);
+            }
         }
         
         try {
@@ -180,12 +194,78 @@ public class StatsManager {
     }
 
     public String getPlayerName(UUID uuid) {
+        // Check cache first
+        if (playerNames.containsKey(uuid)) {
+            return playerNames.get(uuid);
+        }
+        
         Player player = plugin.getServer().getPlayer(uuid);
         if (player != null) {
-            return player.getName();
+            String name = player.getName();
+            playerNames.put(uuid, name);
+            return name;
         }
-        return plugin.getServer().getOfflinePlayer(uuid).getName() != null ? 
-               plugin.getServer().getOfflinePlayer(uuid).getName() : "Unknown";
+        
+        // Try cached name from playerdata.yml first
+        String name = loadPlayerNameFromFile(uuid);
+        if (name != null) {
+            playerNames.put(uuid, name);
+            return name;
+        }
+        
+        // Try Mojang API for offline players
+        name = fetchNameFromMojang(uuid);
+        if (name != null) {
+            playerNames.put(uuid, name);
+            return name;
+        }
+        
+        // Fallback to server's offline player lookup
+        org.bukkit.OfflinePlayer offline = plugin.getServer().getOfflinePlayer(uuid);
+        name = offline.getName() != null ? offline.getName() : uuid.toString().substring(0, 8);
+        playerNames.put(uuid, name);
+        return name;
+    }
+    
+    public void updatePlayerName(UUID uuid, String name) {
+        playerNames.put(uuid, name);
+    }
+    
+    private String loadPlayerNameFromFile(UUID uuid) {
+        try {
+            FileConfiguration config = YamlConfiguration.loadConfiguration(dataFile);
+            String name = config.getString(uuid.toString() + ".lastName");
+            return name;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private String fetchNameFromMojang(UUID uuid) {
+        try {
+            java.net.URL url = new java.net.URL("https://api.mojang.com/user/profiles/" + uuid.toString().replace("-", "") + "/names");
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(3000);
+            
+            if (conn.getResponseCode() == 200) {
+                String response = new String(conn.getInputStream().readAllBytes());
+                int lastBrace = response.lastIndexOf("\"name\":\"");
+                if (lastBrace != -1) {
+                    String name = response.substring(lastBrace + 8);
+                    int endQuote = name.indexOf("\"");
+                    if (endQuote != -1) {
+                        conn.disconnect();
+                        return name.substring(0, endQuote);
+                    }
+                }
+            }
+            conn.disconnect();
+        } catch (Exception e) {
+            // Ignore errors
+        }
+        return null;
     }
 
     public void resetPlayerStats(UUID uuid) {
