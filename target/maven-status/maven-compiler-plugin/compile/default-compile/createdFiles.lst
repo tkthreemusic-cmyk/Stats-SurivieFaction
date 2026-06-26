@@ -1,8 +1,6 @@
 com/playerstats/listeners/PlayerListener.class
 com/playerstats/manager/StatsManager$PlayerStatsData.class
 com/playerstats/listeners/EntityListener.class
-com/playerstats/manager/ScoreboardManager.class
 com/playerstats/commands/MainCommand.class
-com/playerstats/commands/AdminCommand.class
 com/playerstats/PlayerStats.class
 com/playerstats/manager/StatsManager.class

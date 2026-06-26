@@ -31,13 +31,7 @@ public class MainCommand implements CommandExecutor, TabCompleter {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, 
                             @NotNull String label, @NotNull String[] args) {
         if (args.length == 0) {
-            if (sender instanceof Player player) {
-                plugin.getScoreboardManager().showMainMenu(player);
-                player.sendMessage(Component.text("§6§lPLAYER STATS §7» ").color(NamedTextColor.GOLD)
-                    .append(Component.text("Scoreboard menu opened!").color(NamedTextColor.GRAY)));
-            } else {
-                sender.sendMessage("§cThis command can only be used by players!");
-            }
+            sendHelp(sender);
             return true;
         }
 
@@ -45,18 +39,24 @@ public class MainCommand implements CommandExecutor, TabCompleter {
 
         switch (subCommand) {
             case "help" -> sendHelp(sender);
-            case "kills" -> handleKills(sender, args);
-            case "playerkills", "pvp" -> handlePlayerKills(sender, args);
-            case "deaths" -> handleDeaths(sender, args);
-            case "progress" -> handleProgress(sender, args);
+            case "kills", "kill" -> handleKills(sender);
+            case "playerkills", "pvp", "pk" -> handlePlayerKills(sender);
+            case "deaths", "death" -> handleDeaths(sender);
+            case "progress", "prog" -> handleProgress(sender);
             case "reload" -> handleReload(sender);
-            case "toggle" -> handleToggle(sender);
+            case "reset" -> {
+                if (sender.hasPermission("playerstats.admin")) {
+                    handleReset(sender, args);
+                } else {
+                    sender.sendMessage(Component.text("§cVous n'avez pas la permission!").color(NamedTextColor.RED));
+                }
+            }
             default -> {
                 if (sender instanceof Player player) {
                     String playerName = args[0];
                     showPlayerStats(player, playerName);
                 } else {
-                    sender.sendMessage("§cUnknown subcommand. Use /playerstats help");
+                    sender.sendMessage("§cUnknown subcommand. Use /stats help");
                 }
             }
         }
@@ -65,78 +65,165 @@ public class MainCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendHelp(CommandSender sender) {
-        sender.sendMessage(Component.text("\n§6§l§nPLAYER STATS HELP").color(NamedTextColor.GOLD));
-        sender.sendMessage(Component.text("§7§m-----------------------").color(NamedTextColor.GRAY));
-        sender.sendMessage(Component.text("§e/stats §7- Open scoreboard menu").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("§e/stats kills §7- Top 10 mob killers").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("§e/stats playerkills §7- Top 10 PvP killers").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("§e/stats deaths §7- Top 10 deaths").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("§e/stats progress §7- Top 10 progress").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("§e/stats <player> §7- View player's stats").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("§e/stats toggle §7- Toggle scoreboard").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("§e/stats reload §7- Reload config (admin)").color(NamedTextColor.YELLOW));
-        sender.sendMessage(Component.text("§7§m-----------------------\n").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(""));
+        sender.sendMessage(Component.text(" §6§l▬▬▬ PLAYER STATS ▬▬▬").color(NamedTextColor.GOLD));
+        sender.sendMessage(Component.text(" §7Classements des statistiques des joueurs").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(""));
+        sender.sendMessage(Component.text(" §e/stats kills §7- Classement kills de mobs").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(" §e/stats playerkills §7- Classement PvP").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(" §e/stats deaths §7- Classement morts").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(" §e/stats progress §7- Classement progression").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(" §e/stats <joueur> §7- Voir les stats d'un joueur").color(NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(""));
+        if (sender.hasPermission("playerstats.admin")) {
+            sender.sendMessage(Component.text(" §c/stats reload §7- Recharger la config").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text(" §c/stats reset <joueur> §7- Reset les stats").color(NamedTextColor.RED));
+        }
+        sender.sendMessage(Component.text(" §7§m▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n").color(NamedTextColor.GRAY));
     }
 
-    private void handleKills(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cThis command can only be used by players!");
-            return;
-        }
-        plugin.getScoreboardManager().showScoreboard(player, "kills");
-        player.sendMessage(Component.text("§6§lPLAYER STATS §7» ").color(NamedTextColor.GOLD)
-            .append(Component.text("Showing top mob killers!").color(NamedTextColor.GRAY)));
+    private void handleKills(CommandSender sender) {
+        sendRankingMessage(sender, "KILLS DE MOBS", "mobsKilled", NamedTextColor.GOLD);
     }
 
-    private void handlePlayerKills(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cThis command can only be used by players!");
-            return;
-        }
-        plugin.getScoreboardManager().showScoreboard(player, "playerkills");
-        player.sendMessage(Component.text("§6§lPLAYER STATS §7» ").color(NamedTextColor.GOLD)
-            .append(Component.text("Showing top PvP killers!").color(NamedTextColor.GRAY)));
+    private void handlePlayerKills(CommandSender sender) {
+        sendRankingMessage(sender, "KILLS JOUEURS (PvP)", "playersKilled", NamedTextColor.DARK_RED);
     }
 
-    private void handleDeaths(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cThis command can only be used by players!");
-            return;
-        }
-        plugin.getScoreboardManager().showScoreboard(player, "deaths");
-        player.sendMessage(Component.text("§6§lPLAYER STATS §7» ").color(NamedTextColor.GOLD)
-            .append(Component.text("Showing top deaths!").color(NamedTextColor.GRAY)));
+    private void handleDeaths(CommandSender sender) {
+        sendRankingMessage(sender, "MORTS", "deaths", NamedTextColor.RED);
     }
 
-    private void handleProgress(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cThis command can only be used by players!");
-            return;
+    private void handleProgress(CommandSender sender) {
+        List<UUID> topPlayers = plugin.getStatsManager().getTopProgress(10);
+        
+        sender.sendMessage(Component.text(""));
+        sender.sendMessage(Component.text(" §a§l▬▬▬ TOP 10 PROGRESS ▬▬▬").color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text(""));
+        
+        if (topPlayers.isEmpty()) {
+            sender.sendMessage(Component.text(" §7Aucun joueur n'a de progression encore.").color(NamedTextColor.GRAY));
+        } else {
+            for (int i = 0; i < topPlayers.size(); i++) {
+                UUID uuid = topPlayers.get(i);
+                String playerName = plugin.getStatsManager().getPlayerName(uuid);
+                StatsManager.PlayerStatsData data = plugin.getStatsManager().getPlayerStats(uuid);
+                int progress = data.blocksBroken + data.blocksPlaced + data.itemsCrafted;
+                sender.sendMessage(buildRankingLine(i + 1, playerName, progress));
+            }
         }
-        plugin.getScoreboardManager().showScoreboard(player, "progress");
-        player.sendMessage(Component.text("§6§lPLAYER STATS §7» ").color(NamedTextColor.GOLD)
-            .append(Component.text("Showing top progress!").color(NamedTextColor.GRAY)));
+        sender.sendMessage(Component.text(" §7§m▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n").color(NamedTextColor.GRAY));
+    }
+
+    private void sendRankingMessage(CommandSender sender, String title, String statType, NamedTextColor titleColor) {
+        List<UUID> topPlayers;
+        switch (statType) {
+            case "mobsKilled" -> topPlayers = plugin.getStatsManager().getTopMobsKilled(10);
+            case "playersKilled" -> topPlayers = plugin.getStatsManager().getTopPlayersKilled(10);
+            case "deaths" -> topPlayers = plugin.getStatsManager().getTopDeaths(10);
+            default -> topPlayers = new ArrayList<>();
+        }
+        
+        sender.sendMessage(Component.text(""));
+        sender.sendMessage(Component.text(" §" + getColorCode(titleColor) + "▬▬▬ TOP 10 " + title + " ▬▬▬").color(titleColor));
+        sender.sendMessage(Component.text(""));
+        
+        if (topPlayers.isEmpty()) {
+            sender.sendMessage(Component.text(" §7Aucun joueur dans ce classement.").color(NamedTextColor.GRAY));
+        } else {
+            for (int i = 0; i < topPlayers.size(); i++) {
+                UUID uuid = topPlayers.get(i);
+                String playerName = plugin.getStatsManager().getPlayerName(uuid);
+                int value = getStatValue(uuid, statType);
+                sender.sendMessage(buildRankingLine(i + 1, playerName, value));
+            }
+        }
+        sender.sendMessage(Component.text(" §7§m▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n").color(NamedTextColor.GRAY));
+    }
+
+    private Component buildRankingLine(int rank, String playerName, int value) {
+        String medal = getMedal(rank);
+        String rankText = getRankText(rank);
+        NamedTextColor valueColor = getValueColor(rank);
+        
+        return Component.text(" " + medal + " " + rankText + " §f" + playerName + " §7- ")
+            .append(Component.text(String.valueOf(value)).color(valueColor));
+    }
+
+    private String getMedal(int rank) {
+        return switch (rank) {
+            case 1 -> "§6🥇";
+            case 2 -> "§f🥈";
+            case 3 -> "§c🥉";
+            default -> "§7▪";
+        };
+    }
+
+    private String getRankText(int rank) {
+        String suffix;
+        if (rank == 1) suffix = "er";
+        else suffix = "ème";
+        return "§e#" + rank + suffix;
+    }
+
+    private NamedTextColor getValueColor(int rank) {
+        switch (rank) {
+            case 1: return NamedTextColor.GOLD;
+            case 2: return NamedTextColor.WHITE;
+            case 3: return NamedTextColor.YELLOW;
+            default: return NamedTextColor.GRAY;
+        }
+    }
+
+    private String getColorCode(NamedTextColor color) {
+        if (color == NamedTextColor.GOLD) return "6";
+        if (color == NamedTextColor.DARK_RED) return "4";
+        if (color == NamedTextColor.RED) return "c";
+        if (color == NamedTextColor.GREEN) return "a";
+        return "e";
+    }
+
+    private int getStatValue(UUID uuid, String statType) {
+        StatsManager.PlayerStatsData data = plugin.getStatsManager().getPlayerStats(uuid);
+        return switch (statType) {
+            case "mobsKilled" -> data.mobsKilled;
+            case "playersKilled" -> data.playersKilled;
+            case "deaths" -> data.deaths;
+            default -> 0;
+        };
     }
 
     private void handleReload(CommandSender sender) {
         if (!sender.hasPermission("playerstats.admin")) {
-            sender.sendMessage(Component.text("§cYou don't have permission to use this command!").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("§cVous n'avez pas la permission!").color(NamedTextColor.RED));
             return;
         }
         plugin.reloadConfig();
         plugin.getStatsManager().saveAllStats();
-        sender.sendMessage(Component.text("§a§lPLAYER STATS §7» ").color(NamedTextColor.GREEN)
-            .append(Component.text("Configuration reloaded!").color(NamedTextColor.GRAY)));
+        sender.sendMessage(Component.text("§a✓ ").color(NamedTextColor.GREEN)
+            .append(Component.text("Configuration rechargée!").color(NamedTextColor.WHITE)));
     }
 
-    private void handleToggle(CommandSender sender) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cThis command can only be used by players!");
+    private void handleReset(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("§cUsage: /stats reset <joueur>").color(NamedTextColor.RED));
             return;
         }
-        plugin.getScoreboardManager().clearScoreboard(player);
-        player.sendMessage(Component.text("§6§lPLAYER STATS §7» ").color(NamedTextColor.GOLD)
-            .append(Component.text("Scoreboard cleared!").color(NamedTextColor.GRAY)));
+        
+        String playerName = args[1];
+        Player target = Bukkit.getPlayer(playerName);
+        UUID targetUUID;
+        
+        if (target != null) {
+            targetUUID = target.getUniqueId();
+        } else {
+            sender.sendMessage(Component.text("§cJoueur non trouvé: " + playerName).color(NamedTextColor.RED));
+            return;
+        }
+        
+        plugin.getStatsManager().resetPlayerStats(targetUUID);
+        sender.sendMessage(Component.text("§a✓ ").color(NamedTextColor.GREEN)
+            .append(Component.text("Stats de " + playerName + " ont été reset!").color(NamedTextColor.WHITE)));
     }
 
     private void showPlayerStats(Player sender, String targetName) {
@@ -148,23 +235,25 @@ public class MainCommand implements CommandExecutor, TabCompleter {
             targetUUID = target.getUniqueId();
             displayName = target.getName();
         } else {
-            sender.sendMessage(Component.text("§cPlayer not found: ").color(NamedTextColor.RED)
+            sender.sendMessage(Component.text("§cJoueur non trouvé: ").color(NamedTextColor.RED)
                 .append(Component.text(targetName).color(NamedTextColor.WHITE)));
             return;
         }
 
         StatsManager.PlayerStatsData stats = plugin.getStatsManager().getPlayerStats(targetUUID);
         
-        sender.sendMessage(Component.text("\n§6§l§n" + displayName + "'s Stats").color(NamedTextColor.GOLD));
-        sender.sendMessage(Component.text("§7§m-----------------------").color(NamedTextColor.GRAY));
-        sender.sendMessage(buildStatLine("§eMobs Killed:", stats.mobsKilled));
-        sender.sendMessage(buildStatLine("§cPlayers Killed:", stats.playersKilled));
-        sender.sendMessage(buildStatLine("§4Deaths:", stats.deaths));
-        sender.sendMessage(buildStatLine("§aBlocks Broken:", stats.blocksBroken));
-        sender.sendMessage(buildStatLine("§aBlocks Placed:", stats.blocksPlaced));
-        sender.sendMessage(buildStatLine("§bItems Crafted:", stats.itemsCrafted));
-        sender.sendMessage(buildStatLine("§dAnimals Bred:", stats.animalsBred));
-        sender.sendMessage(Component.text("§7§m-----------------------\n").color(NamedTextColor.GRAY));
+        sender.sendMessage(Component.text(""));
+        sender.sendMessage(Component.text(" §6§l▬▬▬ " + displayName + " ▬▬▬").color(NamedTextColor.GOLD));
+        sender.sendMessage(Component.text(""));
+        sender.sendMessage(buildStatLine(" §e🗡️ Mobs tués:", stats.mobsKilled));
+        sender.sendMessage(buildStatLine(" §c⚔️ Joueurs tués:", stats.playersKilled));
+        sender.sendMessage(buildStatLine(" §4💀 Morts:", stats.deaths));
+        sender.sendMessage(Component.text(" §7§m──────────────").color(NamedTextColor.GRAY));
+        sender.sendMessage(buildStatLine(" §a⛏️ Blocs cassés:", stats.blocksBroken));
+        sender.sendMessage(buildStatLine(" §a🧱 Blocs posés:", stats.blocksPlaced));
+        sender.sendMessage(buildStatLine(" §b🔨 Objets craftés:", stats.itemsCrafted));
+        sender.sendMessage(buildStatLine(" §d🐄 Animaux élevés:", stats.animalsBred));
+        sender.sendMessage(Component.text(" §7§m▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n").color(NamedTextColor.GRAY));
     }
 
     private Component buildStatLine(String label, int value) {
@@ -178,7 +267,11 @@ public class MainCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         
         if (args.length == 1) {
-            completions.addAll(Arrays.asList("help", "kills", "playerkills", "deaths", "progress", "reload", "toggle"));
+            completions.addAll(Arrays.asList("help", "kills", "playerkills", "deaths", "progress"));
+            if (sender.hasPermission("playerstats.admin")) {
+                completions.add("reload");
+                completions.add("reset");
+            }
             for (Player p : Bukkit.getOnlinePlayers()) {
                 completions.add(p.getName());
             }

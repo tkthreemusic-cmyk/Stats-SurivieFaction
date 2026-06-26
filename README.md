@@ -1,119 +1,60 @@
-# 📊 Stats-SurivieFaction
+# 📊 PlayerStats
 
-A comprehensive Minecraft 1.21 plugin for tracking and displaying player statistics with ranked scoreboards on your Survival/Faction server.
+Plugin Minecraft 1.21 pour afficher les statistiques des joueurs et classements directement dans le chat.
 
-## 🎮 Features
+## 🎮 Fonctionnalités
 
-### Ranked Leaderboards
-- **Top 10 Rankings**: Live scoreboards showing the best players in each category
-- **Multiple Categories**: Mob kills, PvP kills, deaths, and overall progress
-- **Medal System**: Gold/Silver/Bronze medals for top 3 players
-- **Real-time Updates**: Scoreboards update automatically every minute
+### Classements dans le Chat
+- **Top 10** : Classement des 10 meilleurs joueurs
+- **Médaille** : 🥇 Or, 🥈 Argent, 🥉 Bronze pour le top 3
+- **Tout dans le chat** : Pas de scoreboard latéral, tout s'affiche dans le chat
 
-### Statistics Tracked
-| Stat | Description |
-|------|-------------|
-| 🧟 Mobs Killed | All hostile mob kills |
-| ⚔️ Player Kills | PvP kill count |
-| 💀 Deaths | Total deaths |
-| ⛏️ Blocks Broken | Blocks mined |
-| 🧱 Blocks Placed | Blocks placed |
-| 🔨 Items Crafted | Items crafted |
-| 🐄 Animals Bred | Animals bred |
+### Statistiques Suivies
+| Statistique | Description |
+|-------------|-------------|
+| 🗡️ Mobs tués | Tueurs de mobs hostiles |
+| ⚔️ Joueurs tués | Kills PvP |
+| 💀 Morts | Total des morts |
+| ⛏️ Blocs cassés | Blocs minés |
+| 🧱 Blocs posés | Blocs placés |
+| 🔨 Objets craftés | Objets fabricués |
+| 🐄 Animaux élevés | Animaux reproduits |
 
 ## 📥 Installation
 
-1. Download the latest release JAR from the [Releases page](https://github.com/tkthreemusic-cmyk/Stats-SurivieFaction/releases)
-2. Place the JAR in your server's `plugins` folder
-3. Restart your server
-4. Configure in `plugins/PlayerStats/config.yml`
+1. Télécharger le JAR depuis les [Releases](https://github.com/tkthreemusic-cmyk/Stats-SurivieFaction/releases)
+2. Placer le JAR dans le dossier `plugins` du serveur
+3. Redémarrer le serveur
 
-## Commands
+## Commandes
 
-### Player Commands
-| Command | Description |
-|---------|-------------|
-| `/stats` | Open scoreboard menu |
-| `/stats kills` | Show top 10 mob killers |
-| `/stats playerkills` | Show top 10 PvP killers |
-| `/stats deaths` | Show top 10 deaths (most to least) |
-| `/stats progress` | Show top 10 progress (blocks, items, etc.) |
-| `/stats <player>` | View specific player's stats |
-| `/stats toggle` | Toggle/clear scoreboard |
-| `/stats reload` | Reload configuration (admin) |
+| Commande | Description |
+|----------|-------------|
+| `/stats` | Afficher l'aide |
+| `/stats kills` | Classement des kills de mobs |
+| `/stats playerkills` | Classement PvP |
+| `/stats deaths` | Classement des morts |
+| `/stats progress` | Classement de la progression |
+| `/stats <joueur>` | Voir les stats d'un joueur |
 
-### Admin Commands
-| Command | Description |
-|---------|-------------|
-| `/psta reset <player>` | Reset all stats for a player |
-| `/psta reset <player> <stat>` | Reset specific stat |
-| `/psta set <player> <stat> <value>` | Set a stat value |
-| `/psta add <player> <stat> <value>` | Add to a stat value |
-
-### Stat Types for Admin Commands
-- `mobskilled`, `mobs`, `kills`
-- `playerskilled`, `players`, `pvp`
-- `deaths`
-- `blocksbroken`
-- `blocksplaced`
-- `itemscrafted`
+### Commandes Admin (OP)
+| Commande | Description |
+|----------|-------------|
+| `/stats reload` | Recharger la configuration |
+| `/stats reset <joueur>` | Reset les stats d'un joueur |
 
 ## Permissions
 
-| Permission | Description | Default |
-|------------|-------------|---------|
-| `playerstats.use` | Basic command usage | true |
-| `playerstats.seeother` | View other players' stats | true |
-| `playerstats.admin` | Admin commands | op |
+| Permission | Description | Défaut |
+|------------|-------------|--------|
+| `playerstats.use` | Commandes de base | true |
+| `playerstats.admin` | Commandes admin | op |
 
-## Building
+## Construction
 
 ```bash
 cd PlayerStats
 mvn clean package
 ```
 
-The compiled JAR will be in `target/PlayerStats-1.0.0.jar`
-
-## Configuration
-
-All settings can be modified in `config.yml`:
-
-```yaml
-settings:
-  auto-save-interval: 5  # minutes
-  max-ranked-players: 10
-
-tracking:
-  mobs-killed: true
-  players-killed: true
-  deaths: true
-  # ... more options
-```
-
-## Scoreboard Display
-
-The plugin displays ranked scoreboards with medals:
-- 🥇 **1st Place**: Gold (✦)
-- 🥈 **2nd Place**: Silver (✦)
-- 🥉 **3rd Place**: Bronze (✦)
-- **4th-10th**: Gray (✦)
-
-## API
-
-Other plugins can access player stats:
-
-```java
-PlayerStats plugin = PlayerStats.getInstance();
-StatsManager manager = plugin.getStatsManager();
-
-// Get player stats
-StatsManager.PlayerStatsData stats = manager.getPlayerStats(player.getUniqueId());
-
-// Increment stats
-manager.incrementMobsKilled(player.getUniqueId());
-```
-
-## Support
-
-For issues or feature requests, please create an issue on the repository.
+Le JAR sera dans `target/PlayerStats-1.1.0.jar`

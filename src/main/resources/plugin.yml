@@ -1,25 +1,18 @@
 name: PlayerStats
-version: '1.0.0'
+version: '1.1.0'
 main: com.playerstats.PlayerStats
 api-version: '1.21'
 author: PlayerStats
-description: Track and display player statistics including kills, deaths, and progress
+description: Plugin de statistiques des joueurs avec classements dans le chat
 commands:
-  playerstats:
-    description: Main command for PlayerStats plugin
-    usage: /<command> [help|kills|deaths|progress|reload] [player]
-    aliases: [pstats, pst]
-  playerstats-admin:
-    description: Admin command for PlayerStats plugin
-    usage: /<command> [reset|set] <player> <stat> <value>
-    aliases: [pstatsadmin, psta]
+  stats:
+    description: Commande principale pour PlayerStats
+    usage: /<command> [help|kills|playerkills|deaths|progress|reload|reset] [player]
+    aliases: [stat, classements]
 permissions:
   playerstats.use:
-    description: Allows basic use of PlayerStats commands
+    description: Permet d'utiliser les commandes de base
     default: true
   playerstats.admin:
-    description: Allows admin commands for PlayerStats
+    description: Permet les commandes admin (reload, reset)
     default: op
-  playerstats.seeother:
-    description: Allows viewing other players' stats
-    default: true
