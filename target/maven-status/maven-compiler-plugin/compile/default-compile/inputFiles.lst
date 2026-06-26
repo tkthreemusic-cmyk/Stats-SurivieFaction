@@ -1,0 +1,7 @@
+/workspace/project/PlayerStats/src/main/java/com/playerstats/PlayerStats.java
+/workspace/project/PlayerStats/src/main/java/com/playerstats/commands/AdminCommand.java
+/workspace/project/PlayerStats/src/main/java/com/playerstats/commands/MainCommand.java
+/workspace/project/PlayerStats/src/main/java/com/playerstats/listeners/EntityListener.java
+/workspace/project/PlayerStats/src/main/java/com/playerstats/listeners/PlayerListener.java
+/workspace/project/PlayerStats/src/main/java/com/playerstats/manager/ScoreboardManager.java
+/workspace/project/PlayerStats/src/main/java/com/playerstats/manager/StatsManager.java

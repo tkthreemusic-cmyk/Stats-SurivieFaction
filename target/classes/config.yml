@@ -1,0 +1,49 @@
+# PlayerStats Configuration
+
+# General settings
+settings:
+  # Auto-save interval in minutes
+  auto-save-interval: 5
+  
+  # Enable scoreboard auto-rotation
+  auto-rotate-scoreboard: true
+  rotation-interval: 30
+  
+  # Maximum players to show in scoreboard rankings
+  max-ranked-players: 10
+
+# Track settings - Enable/disable specific stat tracking
+tracking:
+  mobs-killed: true
+  players-killed: true
+  deaths: true
+  blocks-broken: true
+  blocks-placed: true
+  items-crafted: true
+  distance-walked: true
+  time-played: true
+  damage-dealt: true
+  damage-taken: true
+  food-eaten: true
+  animals-bred: true
+
+# Scoreboard settings
+scoreboard:
+  # Enable scoreboard on player join
+  auto-show-on-join: false
+  # Default scoreboard type (kills, playerkills, deaths, progress)
+  default-view: "kills"
+  # Title colors
+  title-color: "GOLD"
+  # Update interval in seconds
+  update-interval: 60
+
+# Messages
+messages:
+  prefix: "&6&lPLAYER STATS &7»"
+  scoreboard-opened: "&7Scoreboard menu opened!"
+  scoreboard-cleared: "&7Scoreboard cleared!"
+  player-not-found: "&cPlayer not found: &e{player}"
+  no-permission: "&cYou don't have permission to use this command!"
+  stats-reset: "&aSuccessfully reset stats for &e{player}"
+  stats-updated: "&aSuccessfully updated stats for &e{player}"
