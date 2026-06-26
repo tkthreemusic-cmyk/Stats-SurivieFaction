@@ -44,6 +44,7 @@ public class MainCommand implements CommandExecutor, TabCompleter {
             case "deaths", "death" -> handleDeaths(sender);
             case "progress", "prog" -> handleProgress(sender);
             case "reload" -> handleReload(sender);
+            case "import" -> handleImport(sender);
             case "reset" -> {
                 if (sender.hasPermission("playerstats.admin")) {
                     handleReset(sender, args);
@@ -77,6 +78,7 @@ public class MainCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Component.text(""));
         if (sender.hasPermission("playerstats.admin")) {
             sender.sendMessage(Component.text(" §c/stats reload §7- Recharger la config").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text(" §c/stats import §7- Importer les stats Minecraft").color(NamedTextColor.RED));
             sender.sendMessage(Component.text(" §c/stats reset <joueur> §7- Reset les stats").color(NamedTextColor.RED));
         }
         sender.sendMessage(Component.text(" §7§m▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n").color(NamedTextColor.GRAY));
@@ -204,6 +206,22 @@ public class MainCommand implements CommandExecutor, TabCompleter {
             .append(Component.text("Configuration rechargée!").color(NamedTextColor.WHITE)));
     }
 
+    private void handleImport(CommandSender sender) {
+        if (!sender.hasPermission("playerstats.admin")) {
+            sender.sendMessage(Component.text("§cVous n'avez pas la permission!").color(NamedTextColor.RED));
+            return;
+        }
+        
+        sender.sendMessage(Component.text("§6⏳ Import des stats Minecraft en cours...").color(NamedTextColor.GOLD));
+        
+        int count = plugin.getStatsManager().importAllMinecraftStats();
+        
+        sender.sendMessage(Component.text("§a✓ ").color(NamedTextColor.GREEN)
+            .append(Component.text("Import terminé! ").color(NamedTextColor.WHITE))
+            .append(Component.text(count + " joueurs ").color(NamedTextColor.GOLD))
+            .append(Component.text("ont vu leurs stats importées!").color(NamedTextColor.WHITE)));
+    }
+
     private void handleReset(CommandSender sender, String[] args) {
         if (args.length < 2) {
             sender.sendMessage(Component.text("§cUsage: /stats reset <joueur>").color(NamedTextColor.RED));
@@ -270,6 +288,7 @@ public class MainCommand implements CommandExecutor, TabCompleter {
             completions.addAll(Arrays.asList("help", "kills", "playerkills", "deaths", "progress"));
             if (sender.hasPermission("playerstats.admin")) {
                 completions.add("reload");
+                completions.add("import");
                 completions.add("reset");
             }
             for (Player p : Bukkit.getOnlinePlayers()) {

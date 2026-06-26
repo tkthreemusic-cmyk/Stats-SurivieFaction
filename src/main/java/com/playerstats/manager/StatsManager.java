@@ -185,6 +185,91 @@ public class StatsManager {
     public boolean hasImportedFromMinecraft(UUID uuid) {
         return importedFromMinecraft.getOrDefault(uuid, false);
     }
+    
+    public int importAllMinecraftStats() {
+        int importedCount = 0;
+        
+        // Check all world directories
+        String[] worldNames = {"world", "world_nether", "world_the_end"};
+        
+        for (String worldName : worldNames) {
+            File statsDir = new File(worldName + "/stats");
+            if (statsDir.exists() && statsDir.isDirectory()) {
+                File[] statFiles = statsDir.listFiles((dir, name) -> name.endsWith(".json"));
+                if (statFiles != null) {
+                    for (File statFile : statFiles) {
+                        String uuidStr = statFile.getName().replace(".json", "");
+                        try {
+                            UUID uuid = UUID.fromString(uuidStr);
+                            if (!importedFromMinecraft.getOrDefault(uuid, false)) {
+                                // Only import if we don't have stats yet
+                                if (!playerStats.containsKey(uuid) || 
+                                    getPlayerStats(uuid).mobsKilled == 0) {
+                                    String content = Files.readString(statFile.toPath());
+                                    PlayerStatsData minecraftData = parseMinecraftStats(content);
+                                    
+                                    PlayerStatsData currentData = getPlayerStats(uuid);
+                                    currentData.mobsKilled = minecraftData.mobsKilled;
+                                    currentData.deaths = minecraftData.deaths;
+                                    currentData.blocksBroken = minecraftData.blocksBroken;
+                                    currentData.blocksPlaced = minecraftData.blocksPlaced;
+                                    currentData.itemsCrafted = minecraftData.itemsCrafted;
+                                    
+                                    importedFromMinecraft.put(uuid, true);
+                                    importedCount++;
+                                    
+                                    plugin.getLogger().info("Stats importees pour " + getPlayerName(uuid));
+                                }
+                            }
+                        } catch (Exception e) {
+                            plugin.getLogger().warning("Erreur import stats: " + uuidStr);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Also check server root stats folder
+        File serverStatsDir = new File("stats");
+        if (serverStatsDir.exists() && serverStatsDir.isDirectory()) {
+            File[] statFiles = serverStatsDir.listFiles((dir, name) -> name.endsWith(".json"));
+            if (statFiles != null) {
+                for (File statFile : statFiles) {
+                    String uuidStr = statFile.getName().replace(".json", "");
+                    try {
+                        UUID uuid = UUID.fromString(uuidStr);
+                        if (!importedFromMinecraft.getOrDefault(uuid, false)) {
+                            if (!playerStats.containsKey(uuid) || 
+                                getPlayerStats(uuid).mobsKilled == 0) {
+                                String content = Files.readString(statFile.toPath());
+                                PlayerStatsData minecraftData = parseMinecraftStats(content);
+                                
+                                PlayerStatsData currentData = getPlayerStats(uuid);
+                                currentData.mobsKilled = minecraftData.mobsKilled;
+                                currentData.deaths = minecraftData.deaths;
+                                currentData.blocksBroken = minecraftData.blocksBroken;
+                                currentData.blocksPlaced = minecraftData.blocksPlaced;
+                                currentData.itemsCrafted = minecraftData.itemsCrafted;
+                                
+                                importedFromMinecraft.put(uuid, true);
+                                importedCount++;
+                                
+                                plugin.getLogger().info("Stats importees pour " + getPlayerName(uuid));
+                            }
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().warning("Erreur import stats: " + uuidStr);
+                    }
+                }
+            }
+        }
+        
+        if (importedCount > 0) {
+            saveAllStats();
+        }
+        
+        return importedCount;
+    }
 
     private void loadStats() {
         if (!dataFile.exists()) {
