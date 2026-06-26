@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -15,14 +16,174 @@ public class StatsManager {
     private final PlayerStats plugin;
     private final Map<UUID, PlayerStatsData> playerStats;
     private final Map<UUID, String> playerNames;
+    private final Map<UUID, Boolean> importedFromMinecraft;
     private final File dataFile;
 
     public StatsManager(PlayerStats plugin) {
         this.plugin = plugin;
         this.playerStats = new HashMap<>();
         this.playerNames = new HashMap<>();
+        this.importedFromMinecraft = new HashMap<>();
         this.dataFile = new File(plugin.getDataFolder(), "playerdata.yml");
         loadStats();
+    }
+    
+    public void importMinecraftStats(UUID uuid) {
+        if (importedFromMinecraft.getOrDefault(uuid, false)) {
+            return;
+        }
+        
+        File statsFile = findMinecraftStatsFile(uuid);
+        if (statsFile == null || !statsFile.exists()) {
+            return;
+        }
+        
+        try {
+            String content = Files.readString(statsFile.toPath());
+            PlayerStatsData minecraftData = parseMinecraftStats(content);
+            
+            PlayerStatsData currentData = getPlayerStats(uuid);
+            
+            // Only import if our stats are empty (first time player)
+            boolean isEmpty = currentData.mobsKilled == 0 && 
+                              currentData.playersKilled == 0 && 
+                              currentData.deaths == 0 &&
+                              currentData.blocksBroken == 0 &&
+                              currentData.blocksPlaced == 0 &&
+                              currentData.itemsCrafted == 0;
+            
+            if (isEmpty) {
+                currentData.mobsKilled = minecraftData.mobsKilled;
+                currentData.playersKilled = minecraftData.playersKilled;
+                currentData.deaths = minecraftData.deaths;
+                currentData.blocksBroken = minecraftData.blocksBroken;
+                currentData.blocksPlaced = minecraftData.blocksPlaced;
+                currentData.itemsCrafted = minecraftData.itemsCrafted;
+                
+                importedFromMinecraft.put(uuid, true);
+                plugin.getLogger().info("Stats importées de Minecraft pour " + getPlayerName(uuid));
+            } else {
+                importedFromMinecraft.put(uuid, true);
+            }
+        } catch (IOException e) {
+            plugin.getLogger().warning("Impossible de lire les stats Minecraft pour " + uuid);
+        }
+    }
+    
+    private File findMinecraftStatsFile(UUID uuid) {
+        String uuidDashless = uuid.toString().replace("-", "");
+        
+        // Check all world directories (main world, nether, end)
+        String[] worldNames = {"world", "world_nether", "world_the_end"};
+        
+        for (String worldName : worldNames) {
+            File statsDir = new File(worldName + "/stats");
+            if (statsDir.exists()) {
+                File statsFile = new File(statsDir, uuidDashless + ".json");
+                if (statsFile.exists()) {
+                    return statsFile;
+                }
+            }
+        }
+        
+        // Also check server root for newer Minecraft versions
+        File serverStatsDir = new File("stats");
+        if (serverStatsDir.exists()) {
+            File statsFile = new File(serverStatsDir, uuidDashless + ".json");
+            if (statsFile.exists()) {
+                return statsFile;
+            }
+        }
+        
+        return null;
+    }
+    
+    private PlayerStatsData parseMinecraftStats(String json) {
+        PlayerStatsData data = new PlayerStatsData();
+        
+        try {
+            // Parse the stats JSON
+            com.google.gson.JsonObject stats = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+            
+            // Minecraft 1.20+ uses "minecraft:custom" for custom stats
+            if (stats.has("minecraft:custom")) {
+                com.google.gson.JsonObject custom = stats.getAsJsonObject("minecraft:custom");
+                
+                data.mobsKilled = getIntStat(custom, "minecraft:mob_kills", 0);
+                data.playersKilled = getIntStat(custom, "minecraft.player_kills", 0);
+                // Minecraft doesn't track player kills separately in the same way
+                // We'll need to track this ourselves or look at PvP stats
+                
+                // Try older format
+                if (data.mobsKilled == 0) {
+                    data.mobsKilled = getIntStat(custom, "minecraft:mob_kills", 0);
+                }
+            }
+            
+            // Parse killed stats
+            if (stats.has("minecraft:killed")) {
+                com.google.gson.JsonObject killed = stats.getAsJsonObject("minecraft:killed");
+                for (String key : killed.keySet()) {
+                    if (key.startsWith("minecraft:")) {
+                        data.mobsKilled += killed.get(key).getAsInt();
+                    }
+                }
+            }
+            
+            // Parse killed_by stats (deaths)
+            if (stats.has("minecraft:killed_by")) {
+                com.google.gson.JsonObject killedBy = stats.getAsJsonObject("minecraft:killed_by");
+                for (String key : killedBy.keySet()) {
+                    if (key.equals("minecraft:player")) {
+                        data.deaths += killedBy.get(key).getAsInt();
+                    }
+                }
+            }
+            
+            // Parse minecraft:mined for blocks broken
+            if (stats.has("minecraft:mined")) {
+                com.google.gson.JsonObject mined = stats.getAsJsonObject("minecraft:mined");
+                for (String key : mined.keySet()) {
+                    data.blocksBroken += mined.get(key).getAsInt();
+                }
+            }
+            
+            // Parse minecraft:placed for blocks placed
+            if (stats.has("minecraft:placed")) {
+                com.google.gson.JsonObject placed = stats.getAsJsonObject("minecraft:placed");
+                for (String key : placed.keySet()) {
+                    data.blocksPlaced += placed.get(key).getAsInt();
+                }
+            }
+            
+            // Parse minecraft:crafted for items crafted
+            if (stats.has("minecraft:crafted")) {
+                com.google.gson.JsonObject crafted = stats.getAsJsonObject("minecraft:crafted");
+                for (String key : crafted.keySet()) {
+                    data.itemsCrafted += crafted.get(key).getAsInt();
+                }
+            }
+            
+        } catch (Exception e) {
+            plugin.getLogger().warning("Erreur lors du parsing des stats Minecraft: " + e.getMessage());
+        }
+        
+        return data;
+    }
+    
+    private int getIntStat(com.google.gson.JsonObject obj, String key, int defaultValue) {
+        try {
+            if (obj.has(key)) {
+                return obj.get(key).getAsInt();
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        return defaultValue;
+    }
+    
+    public boolean hasImportedFromMinecraft(UUID uuid) {
+        return importedFromMinecraft.getOrDefault(uuid, false);
     }
 
     private void loadStats() {

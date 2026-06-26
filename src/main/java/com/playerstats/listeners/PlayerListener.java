@@ -34,8 +34,13 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
+        UUID uuid = event.getPlayer().getUniqueId();
+        
         // Save player name when they join
-        plugin.getStatsManager().updatePlayerName(event.getPlayer().getUniqueId(), event.getPlayer().getName());
+        plugin.getStatsManager().updatePlayerName(uuid, event.getPlayer().getName());
+        
+        // Import Minecraft native stats
+        plugin.getStatsManager().importMinecraftStats(uuid);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
